@@ -15,6 +15,8 @@ return array(
     'Joomla\\String\\' => array($vendorDir . '/joomla/string/src'),
     'Joomla\\Registry\\Tests\\' => array($vendorDir . '/joomla/registry/Tests'),
     'Joomla\\Registry\\' => array($vendorDir . '/joomla/registry/src'),
+    'Joomla\\Keychain\\Tests\\' => array($vendorDir . '/joomla/keychain/Tests'),
+    'Joomla\\Keychain\\' => array($vendorDir . '/joomla/keychain/src'),
     'Joomla\\Input\\Tests\\' => array($vendorDir . '/joomla/input/Tests'),
     'Joomla\\Input\\' => array($vendorDir . '/joomla/input/src'),
     'Joomla\\Filter\\Tests\\' => array($vendorDir . '/joomla/filter/Tests'),

@@ -1,30 +1,35 @@
 <?php
 /**
- * @package     Joomla.Platform
- * @subpackage  Keychain
+ * Part of the Joomla Framework Keychain Package
  *
- * @copyright   Copyright (C) 2005 - 2015 Open Source Matters, Inc. All rights reserved
- * @license     GNU General Public License version 2 or later; see LICENSE
+ * @copyright  Copyright (C) 2005 - 2013 Open Source Matters, Inc. All rights reserved.
+ * @license    GNU General Public License version 2 or later; see LICENSE
  */
 
-defined('JPATH_PLATFORM') or die;
+namespace Joomla\Keychain;
+
+use Joomla\Registry\Registry;
 
 /**
  * Keychain Class
  *
- * @since  12.3
+ * @since  1.0
  */
-class JKeychain extends \Joomla\Registry\Registry
+class Keychain extends Registry
 {
 	/**
-	 * @var    string  Method to use for encryption.
-	 * @since  12.3
+	 * Method to use for encryption.
+	 *
+	 * @var    string
+	 * @since  1.0
 	 */
 	public $method = 'aes-128-cbc';
 
 	/**
-	 * @var    string  Initialisation vector for encryption method.
-	 * @since  12.3
+	 * Initialisation vector for encryption method.
+	 *
+	 * @var    string
+	 * @since  1.0
 	 */
 	public $iv = "1234567890123456";
 
@@ -38,8 +43,8 @@ class JKeychain extends \Joomla\Registry\Registry
 	 *
 	 * @return  boolean  Result of writing the passphrase file to disk.
 	 *
-	 * @since   12.3
-	 * @throws  RuntimeException
+	 * @since   1.0
+	 * @throws  \RuntimeException
 	 */
 	public function createPassphraseFile($passphrase, $passphraseFile, $privateKeyFile, $privateKeyPassphrase)
 	{
@@ -47,14 +52,14 @@ class JKeychain extends \Joomla\Registry\Registry
 
 		if (!$privateKey)
 		{
-			throw new RuntimeException("Failed to load private key.");
+			throw new \RuntimeException("Failed to load private key.");
 		}
 
 		$crypted = '';
 
 		if (!openssl_private_encrypt($passphrase, $crypted, $privateKey))
 		{
-			throw new RuntimeException("Failed to encrypt data using private key.");
+			throw new \RuntimeException("Failed to encrypt data using private key.");
 		}
 
 		return file_put_contents($passphraseFile, $crypted);
@@ -67,7 +72,7 @@ class JKeychain extends \Joomla\Registry\Registry
 	 *
 	 * @return  mixed  Value of old value or boolean false if operation failed
 	 *
-	 * @since   12.3
+	 * @since   1.0
 	 */
 	public function deleteValue($path)
 	{
@@ -84,17 +89,17 @@ class JKeychain extends \Joomla\Registry\Registry
 			// Traverse the registry to find the correct node for the result.
 			for ($i = 0, $n = count($nodes) - 1; $i < $n; $i++)
 			{
-				if (!isset($node->{$nodes[$i]}) && ($i != $n))
+				if (!isset($node->$nodes[$i]) && ($i != $n))
 				{
-					$node->{$nodes[$i]} = new stdClass;
+					$node->$nodes[$i] = new \stdClass;
 				}
 
-				$node = $node->{$nodes[$i]};
+				$node = $node->$nodes[$i];
 			}
 
 			// Get the old value if exists so we can return it
-			$result = $node->{$nodes[$i]};
-			unset($node->{$nodes[$i]});
+			$result = $node->$nodes[$i];
+			unset($node->$nodes[$i]);
 		}
 
 		return $result;
@@ -109,14 +114,14 @@ class JKeychain extends \Joomla\Registry\Registry
 	 *
 	 * @return  boolean  Result of loading the object.
 	 *
-	 * @since   12.3
-	 * @throws  RuntimeException
+	 * @since   1.0
+	 * @throws  \RuntimeException
 	 */
 	public function loadKeychain($keychainFile, $passphraseFile, $publicKeyFile)
 	{
 		if (!file_exists($keychainFile))
 		{
-			throw new RuntimeException('Attempting to load non-existent keychain file');
+			throw new \RuntimeException('Attempting to load non-existent keychain file');
 		}
 
 		$passphrase = $this->getPassphraseFromFile($passphraseFile, $publicKeyFile);
@@ -125,7 +130,7 @@ class JKeychain extends \Joomla\Registry\Registry
 
 		if ($cleartext === false)
 		{
-			throw new RuntimeException("Failed to decrypt keychain file");
+			throw new \RuntimeException("Failed to decrypt keychain file");
 		}
 
 		return $this->loadObject(json_decode($cleartext));
@@ -140,8 +145,8 @@ class JKeychain extends \Joomla\Registry\Registry
 	 *
 	 * @return  boolean  Result of storing the file.
 	 *
-	 * @since   12.3
-	 * @throws  RuntimeException
+	 * @since   1.0
+	 * @throws  \RuntimeException
 	 */
 	public function saveKeychain($keychainFile, $passphraseFile, $publicKeyFile)
 	{
@@ -152,7 +157,7 @@ class JKeychain extends \Joomla\Registry\Registry
 
 		if ($encrypted === false)
 		{
-			throw new RuntimeException('Unable to encrypt keychain');
+			throw new \RuntimeException('Unable to encrypt keychain');
 		}
 
 		return file_put_contents($keychainFile, $encrypted);
@@ -166,33 +171,33 @@ class JKeychain extends \Joomla\Registry\Registry
 	 *
 	 * @return  string  The passphrase in from passphraseFile
 	 *
-	 * @since   12.3
-	 * @throws  RuntimeException
+	 * @since   1.0
+	 * @throws  \RuntimeException
 	 */
 	protected function getPassphraseFromFile($passphraseFile, $publicKeyFile)
 	{
 		if (!file_exists($publicKeyFile))
 		{
-			throw new RuntimeException('Missing public key file');
+			throw new \RuntimeException('Missing public key file');
 		}
 
 		$publicKey = openssl_get_publickey(file_get_contents($publicKeyFile));
 
 		if (!$publicKey)
 		{
-			throw new RuntimeException("Failed to load public key.");
+			throw new \RuntimeException("Failed to load public key.");
 		}
 
 		if (!file_exists($passphraseFile))
 		{
-			throw new RuntimeException('Missing passphrase file');
+			throw new \RuntimeException('Missing passphrase file');
 		}
 
 		$passphrase = '';
 
 		if (!openssl_public_decrypt(file_get_contents($passphraseFile), $passphrase, $publicKey))
 		{
-			throw new RuntimeException('Failed to decrypt passphrase file');
+			throw new \RuntimeException('Failed to decrypt passphrase file');
 		}
 
 		return $passphrase;
