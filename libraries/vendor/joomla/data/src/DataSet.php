@@ -1,45 +1,44 @@
 <?php
 /**
- * @package     Joomla.Platform
- * @subpackage  Data
+ * Part of the Joomla Framework Data Package
  *
- * @copyright   Copyright (C) 2005 - 2015 Open Source Matters, Inc. All rights reserved.
- * @license     GNU General Public License version 2 or later; see LICENSE
+ * @copyright  Copyright (C) 2005 - 2013 Open Source Matters, Inc. All rights reserved.
+ * @license    GNU General Public License version 2 or later; see LICENSE
  */
 
-defined('JPATH_PLATFORM') or die;
+namespace Joomla\Data;
 
 /**
- * JDataSet is a collection class that allows the developer to operate on a set of JData objects as if they were in a
+ * DataSet is a collection class that allows the developer to operate on a set of DataObject objects as if they were in a
  * typical PHP array.
  *
- * @since  12.3
+ * @since  1.0
  */
-class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
+class DataSet implements DumpableInterface, \ArrayAccess, \Countable, \Iterator
 {
 	/**
 	 * The current position of the iterator.
 	 *
 	 * @var    integer
-	 * @since  12.3
+	 * @since  1.0
 	 */
-	private $_current = false;
+	private $current = false;
 
 	/**
 	 * The iterator objects.
 	 *
 	 * @var    array
-	 * @since  12.3
+	 * @since  1.0
 	 */
-	private $_objects = array();
+	private $objects = array();
 
 	/**
 	 * The class constructor.
 	 *
-	 * @param   array  $objects  An array of JData objects to bind to the data set.
+	 * @param   array  $objects  An array of Data\Object objects to bind to the data set.
 	 *
-	 * @since   12.3
-	 * @throws  InvalidArgumentException if an object is not an instance of JData.
+	 * @since   1.0
+	 * @throws  \InvalidArgumentException if an object is not an instance of Data\Object.
 	 */
 	public function __construct(array $objects = array())
 	{
@@ -62,14 +61,14 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 	 *
 	 * @return  array   An array of values returned by the methods called on the objects in the data set.
 	 *
-	 * @since   12.3
+	 * @since   1.0
 	 */
 	public function __call($method, $arguments = array())
 	{
 		$return = array();
 
 		// Iterate through the objects.
-		foreach ($this->_objects as $key => $object)
+		foreach ($this->objects as $key => $object)
 		{
 			// Create the object callback.
 			$callback = array($object, $method);
@@ -91,7 +90,7 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 	 * Example: $array = $dataSet->foo;
 	 *
 	 * This will return a column of the values of the 'foo' property in all the objects
-	 * (or values determined by custom property setters in the individual JData's).
+	 * (or values determined by custom property setters in the individual Data\Object's).
 	 * The result array will contain an entry for each object in the list (compared to __call which may not).
 	 * The keys of the objects and the result array are maintained.
 	 *
@@ -99,14 +98,14 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 	 *
 	 * @return  array  An associative array of the values.
 	 *
-	 * @since   12.3
+	 * @since   1.0
 	 */
 	public function __get($property)
 	{
 		$return = array();
 
 		// Iterate through the objects.
-		foreach ($this->_objects as $key => $object)
+		foreach ($this->objects as $key => $object)
 		{
 			// Get the property.
 			$return[$key] = $object->$property;
@@ -124,14 +123,14 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 	 *
 	 * @return  boolean  True if the property is set in any of the objects in the data set.
 	 *
-	 * @since   12.3
+	 * @since   1.0
 	 */
 	public function __isset($property)
 	{
 		$return = array();
 
 		// Iterate through the objects.
-		foreach ($this->_objects as $object)
+		foreach ($this->objects as $object)
 		{
 			// Check the property.
 			$return[] = isset($object->$property);
@@ -146,19 +145,19 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 	 * Example: $objectList->foo = 'bar';
 	 *
 	 * This will set the 'foo' property to 'bar' in all of the objects
-	 * (or a value determined by custom property setters in the JData).
+	 * (or a value determined by custom property setters in the Data\Object).
 	 *
 	 * @param   string  $property  The name of the property.
 	 * @param   mixed   $value     The value to give the data property.
 	 *
 	 * @return  void
 	 *
-	 * @since   12.3
+	 * @since   1.0
 	 */
 	public function __set($property, $value)
 	{
 		// Iterate through the objects.
-		foreach ($this->_objects as $object)
+		foreach ($this->objects as $object)
 		{
 			// Set the property.
 			$object->$property = $value;
@@ -170,18 +169,18 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 	 *
 	 * Example: unset($objectList->foo);
 	 *
-	 * This will unset all of the 'foo' properties in the list of JData's.
+	 * This will unset all of the 'foo' properties in the list of Data\Object's.
 	 *
 	 * @param   string  $property  The name of the property.
 	 *
 	 * @return  void
 	 *
-	 * @since   12.3
+	 * @since   1.0
 	 */
 	public function __unset($property)
 	{
 		// Iterate through the objects.
-		foreach ($this->_objects as $object)
+		foreach ($this->objects as $object)
 		{
 			unset($object->$property);
 		}
@@ -192,23 +191,23 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 	 *
 	 * @return  integer  The number of objects.
 	 *
-	 * @since   12.3
+	 * @since   1.0
 	 */
 	public function count()
 	{
-		return count($this->_objects);
+		return count($this->objects);
 	}
 
 	/**
 	 * Clears the objects in the data set.
 	 *
-	 * @return  JDataSet  Returns itself to allow chaining.
+	 * @return  DataSet  Returns itself to allow chaining.
 	 *
-	 * @since   12.3
+	 * @since   1.0
 	 */
 	public function clear()
 	{
-		$this->_objects = array();
+		$this->objects = array();
 		$this->rewind();
 
 		return $this;
@@ -217,34 +216,34 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 	/**
 	 * Get the current data object in the set.
 	 *
-	 * @return  JData  The current object, or false if the array is empty or the pointer is beyond the end of the elements.
+	 * @return  DataObject  The current object, or false if the array is empty or the pointer is beyond the end of the elements.
 	 *
-	 * @since   12.3
+	 * @since   1.0
 	 */
 	public function current()
 	{
-		return is_scalar($this->_current) ? $this->_objects[$this->_current] : false;
+		return is_scalar($this->current) ? $this->objects[$this->current] : false;
 	}
 
 	/**
 	 * Dumps the data object in the set, recursively if appropriate.
 	 *
-	 * @param   integer           $depth   The maximum depth of recursion (default = 3).
-	 *                                     For example, a depth of 0 will return a stdClass with all the properties in native
-	 *                                     form. A depth of 1 will recurse into the first level of properties only.
-	 * @param   SplObjectStorage  $dumped  An array of already serialized objects that is used to avoid infinite loops.
+	 * @param   integer            $depth   The maximum depth of recursion (default = 3).
+	 *                                      For example, a depth of 0 will return a stdClass with all the properties in native
+	 *                                      form. A depth of 1 will recurse into the first level of properties only.
+	 * @param   \SplObjectStorage  $dumped  An array of already serialized objects that is used to avoid infinite loops.
 	 *
-	 * @return  array  An associative array of the date objects in the set, dumped as a simple PHP stdClass object.
+	 * @return  array  An associative array of the data objects in the set, dumped as a simple PHP stdClass object.
 	 *
-	 * @see     JData::dump()
-	 * @since   12.3
+	 * @see     DataObject::dump()
+	 * @since   1.0
 	 */
-	public function dump($depth = 3, SplObjectStorage $dumped = null)
+	public function dump($depth = 3, \SplObjectStorage $dumped = null)
 	{
 		// Check if we should initialise the recursion tracker.
 		if ($dumped === null)
 		{
-			$dumped = new SplObjectStorage;
+			$dumped = new \SplObjectStorage;
 		}
 
 		// Add this object to the dumped stack.
@@ -256,7 +255,7 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 		if ($depth > 0)
 		{
 			// Handle JSON serialization recursively.
-			foreach ($this->_objects as $key => $object)
+			foreach ($this->objects as $key => $object)
 			{
 				$objects[$key] = $object->dump($depth, $dumped);
 			}
@@ -276,7 +275,7 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 	 *
 	 * @return  array  An array that can be serialised by json_encode().
 	 *
-	 * @since   12.3
+	 * @since   1.0
 	 */
 	public function jsonSerialize($serialized = null)
 	{
@@ -291,7 +290,7 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 		$return = array();
 
 		// Iterate through the objects.
-		foreach ($this->_objects as $object)
+		foreach ($this->objects as $object)
 		{
 			// Call the method for the object.
 			$return[] = $object->jsonSerialize($serialized);
@@ -305,11 +304,11 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 	 *
 	 * @return  scalar  The object key on success; null on failure.
 	 *
-	 * @since   12.3
+	 * @since   1.0
 	 */
 	public function key()
 	{
-		return $this->_current;
+		return $this->current;
 	}
 
 	/**
@@ -317,11 +316,11 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 	 *
 	 * @return  array  The array of keys
 	 *
-	 * @since   12.3
+	 * @since   1.0
 	 */
 	public function keys()
 	{
-		return array_keys($this->_objects);
+		return array_keys($this->objects);
 	}
 
 	/**
@@ -329,7 +328,7 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 	 *
 	 * @return  void
 	 *
-	 * @since   12.3
+	 * @since   1.0
 	 */
 	public function next()
 	{
@@ -337,26 +336,26 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 		$keys = $this->keys();
 
 		// Check if _current has been set to false but offsetUnset.
-		if ($this->_current === false && isset($keys[0]))
+		if ($this->current === false && isset($keys[0]))
 		{
 			// This is a special case where offsetUnset was used in a foreach loop and the first element was unset.
-			$this->_current = $keys[0];
+			$this->current = $keys[0];
 		}
 		else
 		{
 			// Get the current key.
-			$position = array_search($this->_current, $keys);
+			$position = array_search($this->current, $keys);
 
 			// Check if there is an object after the current object.
 			if ($position !== false && isset($keys[$position + 1]))
 			{
 				// Get the next id.
-				$this->_current = $keys[$position + 1];
+				$this->current = $keys[$position + 1];
 			}
 			else
 			{
 				// That was the last object or the internal properties have become corrupted.
-				$this->_current = null;
+				$this->current = null;
 			}
 		}
 	}
@@ -368,11 +367,11 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 	 *
 	 * @return  boolean  True if the object exists, false otherwise.
 	 *
-	 * @since   12.3
+	 * @since   1.0
 	 */
 	public function offsetExists($offset)
 	{
-		return isset($this->_objects[$offset]);
+		return isset($this->objects[$offset]);
 	}
 
 	/**
@@ -380,36 +379,35 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 	 *
 	 * @param   mixed  $offset  The object offset.
 	 *
-	 * @return  JData  The object if it exists, null otherwise.
+	 * @return  DataObject  The object if it exists, null otherwise.
 	 *
-	 * @since   12.3
+	 * @since   1.0
 	 */
 	public function offsetGet($offset)
 	{
-		return isset($this->_objects[$offset]) ? $this->_objects[$offset] : null;
+		return isset($this->objects[$offset]) ? $this->objects[$offset] : null;
 	}
 
 	/**
 	 * Sets an offset in the iterator.
 	 *
-	 * @param   mixed  $offset  The object offset.
-	 * @param   JData  $object  The object object.
+	 * @param   mixed       $offset  The object offset.
+	 * @param   DataObject  $object  The object object.
 	 *
 	 * @return  void
 	 *
-	 * @since   12.3
-	 * @throws  InvalidArgumentException if an object is not an instance of JData.
+	 * @since   1.0
+	 * @throws  \InvalidArgumentException if an object is not an instance of Data\Object.
 	 */
 	public function offsetSet($offset, $object)
 	{
-		// Check if the object is a JData object.
-		if (!($object instanceof JData))
+		if (!($object instanceof DataObject))
 		{
-			throw new InvalidArgumentException(sprintf('%s("%s", *%s*)', __METHOD__, $offset, gettype($object)));
+			throw new \InvalidArgumentException(sprintf('%s("%s", *%s*)', __METHOD__, $offset, gettype($object)));
 		}
 
 		// Set the offset.
-		$this->_objects[$offset] = $object;
+		$this->objects[$offset] = $object;
 	}
 
 	/**
@@ -419,7 +417,7 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 	 *
 	 * @return  void
 	 *
-	 * @since   12.3
+	 * @since   1.0
 	 */
 	public function offsetUnset($offset)
 	{
@@ -430,26 +428,26 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 		}
 
 		// Check for special handling of unsetting the current position.
-		if ($offset == $this->_current)
+		if ($offset == $this->current)
 		{
 			// Get the current position.
 			$keys = $this->keys();
-			$position = array_search($this->_current, $keys);
+			$position = array_search($this->current, $keys);
 
 			// Check if there is an object before the current object.
 			if ($position > 0)
 			{
 				// Move the current position back one.
-				$this->_current = $keys[$position - 1];
+				$this->current = $keys[$position - 1];
 			}
 			else
 			{
 				// We are at the start of the keys AND let's assume we are in a foreach loop and `next` is going to be called.
-				$this->_current = false;
+				$this->current = false;
 			}
 		}
 
-		unset($this->_objects[$offset]);
+		unset($this->objects[$offset]);
 	}
 
 	/**
@@ -457,19 +455,19 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 	 *
 	 * @return  void
 	 *
-	 * @since   12.3
+	 * @since   1.0
 	 */
 	public function rewind()
 	{
 		// Set the current position to the first object.
-		if (empty($this->_objects))
+		if (empty($this->objects))
 		{
-			$this->_current = false;
+			$this->current = false;
 		}
 		else
 		{
 			$keys = $this->keys();
-			$this->_current = array_shift($keys);
+			$this->current = array_shift($keys);
 		}
 	}
 
@@ -478,12 +476,12 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 	 *
 	 * @return  boolean  True if valid, false otherwise.
 	 *
-	 * @since   12.3
+	 * @since   1.0
 	 */
 	public function valid()
 	{
 		// Check the current position.
-		if (!is_scalar($this->_current) || !isset($this->_objects[$this->_current]))
+		if (!is_scalar($this->current) || !isset($this->objects[$this->current]))
 		{
 			return false;
 		}
@@ -498,8 +496,8 @@ class JDataSet implements JDataDumpable, ArrayAccess, Countable, Iterator
 	 *
 	 * @return  void
 	 *
-	 * @since   12.3
-	 * @throws  InvalidArgumentException if an object is not an instance of JData.
+	 * @since   1.0
+	 * @throws  \InvalidArgumentException if an object is not an instance of Data\DataObject.
 	 */
 	private function _initialise(array $input = array())
 	{

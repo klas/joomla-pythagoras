@@ -821,5 +821,49 @@
             "joomla",
             "keychain"
         ]
+    },
+    {
+        "name": "joomla/data",
+        "version": "1.1.1",
+        "version_normalized": "1.1.1.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/joomla-framework/data.git",
+            "reference": "fb835631884d6fd204dd66aef70a479f2bf3eceb"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/joomla-framework/data/zipball/fb835631884d6fd204dd66aef70a479f2bf3eceb",
+            "reference": "fb835631884d6fd204dd66aef70a479f2bf3eceb",
+            "shasum": ""
+        },
+        "require": {
+            "joomla/compat": "~1.0",
+            "joomla/registry": "~1.0",
+            "php": ">=5.3.10"
+        },
+        "require-dev": {
+            "joomla/test": "~1.0"
+        },
+        "time": "2014-02-09 01:26:27",
+        "type": "joomla-package",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "Joomla\\Data\\": "src/",
+                "Joomla\\Data\\Tests\\": "Tests/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "GPL-2.0+"
+        ],
+        "description": "Joomla Data Package",
+        "homepage": "https://github.com/joomla-framework/data",
+        "keywords": [
+            "data",
+            "framework",
+            "joomla"
+        ]
     }
 ]
