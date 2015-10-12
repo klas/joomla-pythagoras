@@ -303,14 +303,22 @@ abstract class JFormField
 	protected static $generated_fieldname = '__field';
 
 	/**
-	 * Layout to render the form field
+	 * Layout to render the input field in getInput(). This is only used for rendering edit forms.
+	 *
+	 * @var  string
+	 */
+	protected $renderInputLayout = 'joomla.form.field.changeme';
+
+	/**
+	 * Layout to render the edit form field. This is used by renderField() to render the label and input field in
+	 * edit forms, essentially combining the output of getInput() and getLabel().
 	 *
 	 * @var  string
 	 */
 	protected $renderLayout = 'joomla.form.renderfield';
 
 	/**
-	 * Layout to render the label
+	 * Layout to render the label in edit forms. This is used by getLabel() when rendering edit forms.
 	 *
 	 * @var  string
 	 */
@@ -385,24 +393,20 @@ abstract class JFormField
 			case 'autocomplete':
 			case 'spellcheck':
 				return $this->$name;
+				break;
 
 			case 'input':
-				// If the input hasn't yet been generated, generate it.
-				if (empty($this->input))
-				{
-					$this->input = $this->getInput();
-				}
-
-				return $this->input;
-
 			case 'label':
-				// If the label hasn't yet been generated, generate it.
-				if (empty($this->label))
+			case 'static':
+			case 'repeatable':
+				if (empty($this->$name))
 				{
-					$this->label = $this->getLabel();
+					$methodName = 'get' . ucfirst($name);
+					$this->$name = $this->{$methodName}();
 				}
 
-				return $this->label;
+				return $this->$name;
+				break;
 
 			case 'title':
 				return $this->getTitle();
@@ -667,13 +671,25 @@ abstract class JFormField
 	}
 
 	/**
-	 * Method to get the field input markup.
+	 * Method to get the field input markup for a generic list. By default JLayoutHelper is used to render the input
+	 * field through JLayout.
 	 *
 	 * @return  string  The field input markup.
 	 *
 	 * @since   11.1
 	 */
-	abstract protected function getInput();
+	protected function getInput()
+	{
+		$layout = !empty($this->element['layout']) ? (string) $this->element['layout'] : $this->renderInputLayout;
+
+		// Ensure field meets the requirements
+		if (empty($layout))
+		{
+			return '';
+		}
+
+		return $this->getLayoutRenderer($layout)->render((object) $this->getInputLayoutData());
+	}
 
 	/**
 	 * Method to get the field title.
@@ -722,15 +738,36 @@ abstract class JFormField
 		$description = ($this->translateDescription && !empty($this->description)) ? JText::_($this->description) : $this->description;
 
 		$displayData = array(
-				'text'        => $text,
-				'description' => $description,
-				'for'         => $this->id,
-				'required'    => (bool) $this->required,
-				'classes'     => explode(' ', $this->labelclass),
-				'position'    => $position
-			);
+			'text'        => $text,
+			'description' => $description,
+			'for'         => $this->id,
+			'required'    => (bool) $this->required,
+			'classes'     => explode(' ', $this->labelclass),
+			'position'    => $position
+		);
 
 		return JLayoutHelper::render($this->renderLabelLayout, $displayData);
+	}
+
+	/**
+	 * Get the rendering of this field type for static display, e.g. in a single item view (typically a "read" task).
+	 *
+	 * @return  string  The field HTML
+	 */
+	protected function getStatic()
+	{
+		return '';
+	}
+
+	/**
+	 * Get the rendering of this field type for a repeatable (grid) display, e.g. in a view listing many item (typically
+	 * a "browse" task)
+	 *
+	 * @return  string  The field HTML
+	 */
+	protected function getRepeatable()
+	{
+		return '';
 	}
 
 	/**
@@ -919,5 +956,72 @@ abstract class JFormField
 		}
 
 		return JLayoutHelper::render($this->renderLayout, array('input' => $this->getInput(), 'label' => $this->getLabel(), 'options' => $options));
+	}
+
+	/**
+	 * Returns the layout renderer. This is a separate method –instead of hardcoded in getInput etc– to make sure we
+	 * have forward compatibility and a way for developers to define custom form fields being rendered by a different
+	 * engine.
+	 *
+	 * @param $layout
+	 *
+	 * @return JLayoutFile
+	 */
+	protected function getLayoutRenderer($layout)
+	{
+		return new JLayoutFile($layout);
+	}
+
+	/**
+	 * Get the data that is going to be passed to the input field layout for the edit views
+	 *
+	 * @return  array
+	 */
+	protected function getInputLayoutData()
+	{
+		// Label preprocess
+		$label = $this->element['label'] ? (string)$this->element['label'] : (string)$this->element['name'];
+		$label = $this->translateLabel ? JText::_($label) : $label;
+
+		// Description preprocess
+		$description = !empty($this->description) ? $this->description : null;
+		$description = !empty($description) && $this->translateDescription ? JText::_($description) : $description;
+
+		$hiddenLabel = empty($options['hiddenLabel']) && $this->getAttribute('hiddenLabel');
+
+		$alt         = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $this->fieldname);
+		$hint        = $this->translateHint ? JText::alt($this->hint, $alt) : $this->hint;
+
+		$debug       = !empty($this->element['debug']) ? ((string)$this->element['debug'] === 'true') : false;
+
+		return array(
+			'autocomplete' => $this->autocomplete,
+			'autofocus'    => $this->autofocus,
+			'class'        => trim($this->class . ' form-field'),
+			'classes'      => explode(' ', $this->class),
+			'debug'        => $debug,
+			'description'  => $description,
+			'disabled'     => $this->disabled,
+			'element'      => $this->element,
+			'field'        => $this,
+			'group'        => $this->group,
+			'hidden'       => $this->hidden,
+			'hiddenLabel'  => $hiddenLabel,
+			'hint'         => $hint,
+			'id'           => $this->id,
+			'label'        => $label,
+			'multiple'     => $this->multiple,
+			'name'         => $this->name,
+			'onchange'     => $this->onchange,
+			'onclick'      => $this->onclick,
+			'pattern'      => $this->pattern,
+			'readonly'     => $this->readonly,
+			'repeat'       => $this->repeat,
+			'required'     => $this->required,
+			'size'         => $this->size,
+			'spellcheck'   => $this->spellcheck,
+			'validate'     => $this->validate,
+			'value'        => $this->value
+		);
 	}
 }
