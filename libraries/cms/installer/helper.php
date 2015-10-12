@@ -9,6 +9,8 @@
 
 defined('JPATH_PLATFORM') or die;
 
+use Joomla\Archive\Archive as JArchive;
+
 jimport('joomla.filesystem.file');
 jimport('joomla.filesystem.folder');
 jimport('joomla.filesystem.path');
@@ -127,7 +129,7 @@ abstract class JInstallerHelper
 		// Do the unpacking of the archive
 		try
 		{
-			$extract = JArchive::extract($archivename, $extractdir);
+			$extract = (new JArchive)->extract($archivename, $extractdir);
 		}
 		catch (Exception $e)
 		{

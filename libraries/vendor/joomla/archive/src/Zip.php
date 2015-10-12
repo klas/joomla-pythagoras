@@ -1,19 +1,19 @@
 <?php
 /**
- * @package     Joomla.Platform
- * @subpackage  Archive
+ * Part of the Joomla Framework Archive Package
  *
- * @copyright   Copyright (C) 2005 - 2015 Open Source Matters, Inc. All rights reserved.
- * @license     GNU General Public License version 2 or later; see LICENSE
+ * @copyright  Copyright (C) 2005 - 2013 Open Source Matters, Inc. All rights reserved.
+ * @license    GNU General Public License version 2 or later; see LICENSE
  */
 
-defined('JPATH_PLATFORM') or die;
+namespace Joomla\Archive;
 
-jimport('joomla.filesystem.file');
-jimport('joomla.filesystem.folder');
+use Joomla\Filesystem\File;
+use Joomla\Filesystem\Path;
+use Joomla\Filesystem\Folder;
 
 /**
- * ZIP format adapter for the JArchive class
+ * ZIP format adapter for the Archive package
  *
  * The ZIP compression code is partially based on code from:
  * Eric Mueller <eric@themepark.com>
@@ -32,58 +32,86 @@ jimport('joomla.filesystem.folder');
  * @contributor  Michael Slusarz <slusarz@horde.org>
  * @contributor  Michael Cochrane <mike@graftonhall.co.nz>
  *
- * @since  11.1
+ * @since  1.0
  */
-class JArchiveZip implements JArchiveExtractable
+class Zip implements ExtractableInterface
 {
 	/**
 	 * ZIP compression methods.
 	 *
 	 * @var    array
-	 * @since  11.1
+	 * @since  1.0
 	 */
-	private $_methods = array(0x0 => 'None', 0x1 => 'Shrunk', 0x2 => 'Super Fast', 0x3 => 'Fast', 0x4 => 'Normal', 0x5 => 'Maximum', 0x6 => 'Imploded',
-		0x8 => 'Deflated');
+	private $methods = array(
+		0x0 => 'None',
+		0x1 => 'Shrunk',
+		0x2 => 'Super Fast',
+		0x3 => 'Fast',
+		0x4 => 'Normal',
+		0x5 => 'Maximum',
+		0x6 => 'Imploded',
+		0x8 => 'Deflated'
+	);
 
 	/**
 	 * Beginning of central directory record.
 	 *
 	 * @var    string
-	 * @since  11.1
+	 * @since  1.0
 	 */
-	private $_ctrlDirHeader = "\x50\x4b\x01\x02";
+	private $ctrlDirHeader = "\x50\x4b\x01\x02";
 
 	/**
 	 * End of central directory record.
 	 *
 	 * @var    string
-	 * @since  11.1
+	 * @since  1.0
 	 */
-	private $_ctrlDirEnd = "\x50\x4b\x05\x06\x00\x00\x00\x00";
+	private $ctrlDirEnd = "\x50\x4b\x05\x06\x00\x00\x00\x00";
 
 	/**
 	 * Beginning of file contents.
 	 *
 	 * @var    string
-	 * @since  11.1
+	 * @since  1.0
 	 */
-	private $_fileHeader = "\x50\x4b\x03\x04";
+	private $fileHeader = "\x50\x4b\x03\x04";
 
 	/**
 	 * ZIP file data buffer
 	 *
 	 * @var    string
-	 * @since  11.1
+	 * @since  1.0
 	 */
-	private $_data = null;
+	private $data = null;
 
 	/**
 	 * ZIP file metadata array
 	 *
 	 * @var    array
-	 * @since  11.1
+	 * @since  1.0
 	 */
-	private $_metadata = null;
+	private $metadata = null;
+
+	/**
+	 * Holds the options array.
+	 *
+	 * @var    mixed  Array or object that implements \ArrayAccess
+	 * @since  1.0
+	 */
+	protected $options = array();
+
+	/**
+	 * Create a new Archive object.
+	 *
+	 * @param   mixed  $options  An array of options or an object that implements \ArrayAccess
+	 *
+	 * @since   1.0
+	 */
+	public function __construct($options = array())
+	{
+		$this->options = $options;
+	}
 
 	/**
 	 * Create a ZIP compressed file from an array of file data.
@@ -93,8 +121,7 @@ class JArchiveZip implements JArchiveExtractable
 	 *
 	 * @return  boolean  True if successful.
 	 *
-	 * @since   11.1
-	 *
+	 * @since   1.0
 	 * @todo    Finish Implementation
 	 */
 	public function create($archive, $files)
@@ -104,10 +131,10 @@ class JArchiveZip implements JArchiveExtractable
 
 		foreach ($files as $file)
 		{
-			$this->_addToZIPFile($file, $contents, $ctrldir);
+			$this->addToZIPFile($file, $contents, $ctrldir);
 		}
 
-		return $this->_createZIPFile($contents, $ctrldir, $archive);
+		return $this->createZIPFile($contents, $ctrldir, $archive);
 	}
 
 	/**
@@ -115,25 +142,17 @@ class JArchiveZip implements JArchiveExtractable
 	 *
 	 * @param   string  $archive      Path to ZIP archive to extract
 	 * @param   string  $destination  Path to extract archive into
-	 * @param   array   $options      Extraction options [unused]
 	 *
 	 * @return  boolean  True if successful
 	 *
-	 * @since   11.1
-	 * @throws RuntimeException
+	 * @since   1.0
+	 * @throws  \RuntimeException
 	 */
-	public function extract($archive, $destination, array $options = array())
+	public function extract($archive, $destination)
 	{
 		if (!is_file($archive))
 		{
-			if (class_exists('JError'))
-			{
-				return JError::raiseWarning(100, 'Archive does not exist');
-			}
-			else
-			{
-				throw new RuntimeException('Archive does not exist');
-			}
+			throw new \RuntimeException('Archive does not exist');
 		}
 
 		if ($this->hasNativeSupport())
@@ -151,7 +170,7 @@ class JArchiveZip implements JArchiveExtractable
 	 *
 	 * @return  boolean  True if supported
 	 *
-	 * @since   11.3
+	 * @since   1.0
 	 */
 	public static function isSupported()
 	{
@@ -163,7 +182,7 @@ class JArchiveZip implements JArchiveExtractable
 	 *
 	 * @return  boolean  True if php has native ZIP support
 	 *
-	 * @since   11.1
+	 * @since   1.0
 	 */
 	public static function hasNativeSupport()
 	{
@@ -177,11 +196,11 @@ class JArchiveZip implements JArchiveExtractable
 	 *
 	 * @return  boolean  True if valid, false if invalid.
 	 *
-	 * @since   11.1
+	 * @since   1.0
 	 */
 	public function checkZipData(&$data)
 	{
-		if (strpos($data, $this->_fileHeader) === false)
+		if (strpos($data, $this->fileHeader) === false)
 		{
 			return false;
 		}
@@ -199,84 +218,44 @@ class JArchiveZip implements JArchiveExtractable
 	 *
 	 * @return  mixed   True if successful
 	 *
-	 * @since   11.1
-	 * @throws  RuntimeException
+	 * @since   1.0
+	 * @throws  \RuntimeException
 	 */
 	protected function extractCustom($archive, $destination)
 	{
-		$this->_data = null;
-		$this->_metadata = null;
+		$this->data = null;
+		$this->metadata = null;
 
-		if (!extension_loaded('zlib'))
+		$this->data = file_get_contents($archive);
+
+		if (!$this->data)
 		{
-			if (class_exists('JError'))
-			{
-				return JError::raiseWarning(100, 'Zlib not supported');
-			}
-			else
-			{
-				throw new RuntimeException('Zlib not supported');
-			}
+			throw new \RuntimeException('Unable to read archive (zip)');
 		}
 
-		$this->_data = file_get_contents($archive);
-
-		if (!$this->_data)
+		if (!$this->readZipInfo($this->data))
 		{
-			if (class_exists('JError'))
-			{
-				return JError::raiseWarning(100, 'Unable to read archive (zip)');
-			}
-			else
-			{
-				throw new RuntimeException('Unable to read archive (zip)');
-			}
+			throw new \RuntimeException('Get ZIP Information failed');
 		}
 
-		if (!$this->_readZipInfo($this->_data))
+		for ($i = 0, $n = count($this->metadata); $i < $n; $i++)
 		{
-			if (class_exists('JError'))
-			{
-				return JError::raiseWarning(100, 'Get ZIP Information failed');
-			}
-			else
-			{
-				throw new RuntimeException('Get ZIP Information failed');
-			}
-		}
-
-		for ($i = 0, $n = count($this->_metadata); $i < $n; $i++)
-		{
-			$lastPathCharacter = substr($this->_metadata[$i]['name'], -1, 1);
+			$lastPathCharacter = substr($this->metadata[$i]['name'], -1, 1);
 
 			if ($lastPathCharacter !== '/' && $lastPathCharacter !== '\\')
 			{
-				$buffer = $this->_getFileData($i);
-				$path = JPath::clean($destination . '/' . $this->_metadata[$i]['name']);
+				$buffer = $this->getFileData($i);
+				$path = Path::clean($destination . '/' . $this->metadata[$i]['name']);
 
 				// Make sure the destination folder exists
-				if (!JFolder::create(dirname($path)))
+				if (!Folder::create(dirname($path)))
 				{
-					if (class_exists('JError'))
-					{
-						return JError::raiseWarning(100, 'Unable to create destination');
-					}
-					else
-					{
-						throw new RuntimeException('Unable to create destination');
-					}
+					throw new \RuntimeException('Unable to create destination');
 				}
 
-				if (JFile::write($path, $buffer) === false)
+				if (File::write($path, $buffer) === false)
 				{
-					if (class_exists('JError'))
-					{
-						return JError::raiseWarning(100, 'Unable to write entry');
-					}
-					else
-					{
-						throw new RuntimeException('Unable to write entry');
-					}
+					throw new \RuntimeException('Unable to write entry');
 				}
 			}
 		}
@@ -292,8 +271,8 @@ class JArchiveZip implements JArchiveExtractable
 	 *
 	 * @return  boolean  True on success
 	 *
-	 * @since   11.1
-	 * @throws  RuntimeException
+	 * @since   1.0
+	 * @throws  \RuntimeException
 	 */
 	protected function extractNative($archive, $destination)
 	{
@@ -302,16 +281,9 @@ class JArchiveZip implements JArchiveExtractable
 		if (is_resource($zip))
 		{
 			// Make sure the destination folder exists
-			if (!JFolder::create($destination))
+			if (!Folder::create($destination))
 			{
-				if (class_exists('JError'))
-				{
-					return JError::raiseWarning(100, 'Unable to create destination');
-				}
-				else
-				{
-					throw new RuntimeException('Unable to create destination');
-				}
+				throw new \RuntimeException('Unable to create destination');
 			}
 
 			// Read files in the archive
@@ -323,16 +295,9 @@ class JArchiveZip implements JArchiveExtractable
 					{
 						$buffer = zip_entry_read($file, zip_entry_filesize($file));
 
-						if (JFile::write($destination . '/' . zip_entry_name($file), $buffer) === false)
+						if (File::write($destination . '/' . zip_entry_name($file), $buffer) === false)
 						{
-							if (class_exists('JError'))
-							{
-								return JError::raiseWarning(100, 'Unable to write entry');
-							}
-							else
-							{
-								throw new RuntimeException('Unable to write entry');
-							}
+							throw new \RuntimeException('Unable to write entry');
 						}
 
 						zip_entry_close($file);
@@ -340,14 +305,7 @@ class JArchiveZip implements JArchiveExtractable
 				}
 				else
 				{
-					if (class_exists('JError'))
-					{
-						return JError::raiseWarning(100, 'Unable to read entry');
-					}
-					else
-					{
-						throw new RuntimeException('Unable to read entry');
-					}
+					throw new \RuntimeException('Unable to read entry');
 				}
 			}
 
@@ -355,14 +313,7 @@ class JArchiveZip implements JArchiveExtractable
 		}
 		else
 		{
-			if (class_exists('JError'))
-			{
-				return JError::raiseWarning(100, 'Unable to open archive');
-			}
-			else
-			{
-				throw new RuntimeException('Unable to open archive');
-			}
+			throw new \RuntimeException('Unable to open archive');
 		}
 
 		return true;
@@ -387,22 +338,22 @@ class JArchiveZip implements JArchiveExtractable
 	 *
 	 * @return  boolean True on success
 	 *
-	 * @since   11.1
-	 * @throws  RuntimeException
+	 * @since   1.0
+	 * @throws  \RuntimeException
 	 */
-	private function _readZipInfo(&$data)
+	private function readZipInfo(&$data)
 	{
 		$entries = array();
 
 		// Find the last central directory header entry
-		$fhLast = strpos($data, $this->_ctrlDirEnd);
+		$fhLast = strpos($data, $this->ctrlDirEnd);
 
 		do
 		{
 			$last = $fhLast;
 		}
 
-		while (($fhLast = strpos($data, $this->_ctrlDirEnd, $fhLast + 1)) !== false);
+		while (($fhLast = strpos($data, $this->ctrlDirEnd, $fhLast + 1)) !== false);
 
 		// Find the central directory offset
 		$offset = 0;
@@ -418,21 +369,14 @@ class JArchiveZip implements JArchiveExtractable
 		}
 
 		// Get details from central directory structure.
-		$fhStart = strpos($data, $this->_ctrlDirHeader, $offset);
+		$fhStart = strpos($data, $this->ctrlDirHeader, $offset);
 		$dataLength = strlen($data);
 
 		do
 		{
 			if ($dataLength < $fhStart + 31)
 			{
-				if (class_exists('JError'))
-				{
-					return JError::raiseWarning(100, 'Invalid Zip Data');
-				}
-				else
-				{
-					throw new RuntimeException('Invalid Zip Data');
-				}
+				throw new \RuntimeException('Invalid Zip Data');
 			}
 
 			$info = unpack('vMethod/VTime/VCRC32/VCompressed/VUncompressed/vLength', substr($data, $fhStart + 10, 20));
@@ -445,7 +389,7 @@ class JArchiveZip implements JArchiveExtractable
 				'date' => null,
 				'_dataStart' => null,
 				'name' => $name,
-				'method' => $this->_methods[$info['Method']],
+				'method' => $this->methods[$info['Method']],
 				'_method' => $info['Method'],
 				'size' => $info['Uncompressed'],
 				'type' => null
@@ -462,14 +406,7 @@ class JArchiveZip implements JArchiveExtractable
 
 			if ($dataLength < $fhStart + 43)
 			{
-				if (class_exists('JError'))
-				{
-					return JError::raiseWarning(100, 'Invalid ZIP data');
-				}
-				else
-				{
-					throw new RuntimeException('Invalid ZIP data');
-				}
+				throw new \RuntimeException('Invalid ZIP data');
 			}
 
 			$info = unpack('vInternal/VExternal/VOffset', substr($data, $fhStart + 36, 10));
@@ -480,18 +417,11 @@ class JArchiveZip implements JArchiveExtractable
 			$entries[$name]['offset'] = $info['Offset'];
 
 			// Get details from local file header since we have the offset
-			$lfhStart = strpos($data, $this->_fileHeader, $entries[$name]['offset']);
+			$lfhStart = strpos($data, $this->fileHeader, $entries[$name]['offset']);
 
 			if ($dataLength < $lfhStart + 34)
 			{
-				if (class_exists('JError'))
-				{
-					return JError::raiseWarning(100, 'Invalid Zip Data');
-				}
-				else
-				{
-					throw new RuntimeException('Invalid Zip Data');
-				}
+				throw new \RuntimeException('Invalid Zip Data');
 			}
 
 			$info = unpack('vMethod/VTime/VCRC32/VCompressed/VUncompressed/vLength/vExtraLength', substr($data, $lfhStart + 8, 25));
@@ -502,9 +432,9 @@ class JArchiveZip implements JArchiveExtractable
 			@set_time_limit(ini_get('max_execution_time'));
 		}
 
-		while ((($fhStart = strpos($data, $this->_ctrlDirHeader, $fhStart + 46)) !== false));
+		while ((($fhStart = strpos($data, $this->ctrlDirHeader, $fhStart + 46)) !== false));
 
-		$this->_metadata = array_values($entries);
+		$this->metadata = array_values($entries);
 
 		return true;
 	}
@@ -516,25 +446,25 @@ class JArchiveZip implements JArchiveExtractable
 	 *
 	 * @return  string  Uncompressed file data buffer.
 	 *
-	 * @since   11.1
+	 * @since   1.0
 	 */
-	private function _getFileData($key)
+	private function getFileData($key)
 	{
-		if ($this->_metadata[$key]['_method'] == 0x8)
+		if ($this->metadata[$key]['_method'] == 0x8)
 		{
-			return gzinflate(substr($this->_data, $this->_metadata[$key]['_dataStart'], $this->_metadata[$key]['csize']));
+			return gzinflate(substr($this->data, $this->metadata[$key]['_dataStart'], $this->metadata[$key]['csize']));
 		}
-		elseif ($this->_metadata[$key]['_method'] == 0x0)
+		elseif ($this->metadata[$key]['_method'] == 0x0)
 		{
 			/* Files that aren't compressed. */
-			return substr($this->_data, $this->_metadata[$key]['_dataStart'], $this->_metadata[$key]['csize']);
+			return substr($this->data, $this->metadata[$key]['_dataStart'], $this->metadata[$key]['csize']);
 		}
-		elseif ($this->_metadata[$key]['_method'] == 0x12)
+		elseif ($this->metadata[$key]['_method'] == 0x12)
 		{
 			// If bz2 extension is loaded use it
 			if (extension_loaded('bz2'))
 			{
-				return bzdecompress(substr($this->_data, $this->_metadata[$key]['_dataStart'], $this->_metadata[$key]['csize']));
+				return bzdecompress(substr($this->data, $this->metadata[$key]['_dataStart'], $this->metadata[$key]['csize']));
 			}
 		}
 
@@ -546,13 +476,13 @@ class JArchiveZip implements JArchiveExtractable
 	 * (date in high 2-bytes, time in low 2-bytes allowing magnitude
 	 * comparison).
 	 *
-	 * @param   int  $unixtime  The current UNIX timestamp.
+	 * @param   integer  $unixtime  The current UNIX timestamp.
 	 *
-	 * @return  int  The current date in a 4-byte DOS format.
+	 * @return  integer  The current date in a 4-byte DOS format.
 	 *
-	 * @since   11.1
+	 * @since   1.0
 	 */
-	protected function _unix2DOSTime($unixtime = null)
+	protected function unix2DOSTime($unixtime = null)
 	{
 		$timearray = (is_null($unixtime)) ? getdate() : getdate($unixtime);
 
@@ -579,11 +509,10 @@ class JArchiveZip implements JArchiveExtractable
 	 *
 	 * @return  void
 	 *
-	 * @since   11.1
-	 *
+	 * @since   1.0
 	 * @todo    Review and finish implementation
 	 */
-	private function _addToZIPFile(array &$file, array &$contents, array &$ctrldir)
+	private function addToZIPFile(array &$file, array &$contents, array &$ctrldir)
 	{
 		$data = &$file['data'];
 		$name = str_replace('\\', '/', $file['name']);
@@ -597,12 +526,12 @@ class JArchiveZip implements JArchiveExtractable
 		}
 
 		// Get the hex time.
-		$dtime = dechex($this->_unix2DosTime($ftime));
+		$dtime = dechex($this->unix2DosTime($ftime));
 		$hexdtime = chr(hexdec($dtime[6] . $dtime[7])) . chr(hexdec($dtime[4] . $dtime[5])) . chr(hexdec($dtime[2] . $dtime[3]))
 			. chr(hexdec($dtime[0] . $dtime[1]));
 
 		/* Begin creating the ZIP data. */
-		$fr = $this->_fileHeader;
+		$fr = $this->fileHeader;
 		/* Version needed to extract. */
 		$fr .= "\x14\x00";
 		/* General purpose bit flag. */
@@ -640,7 +569,7 @@ class JArchiveZip implements JArchiveExtractable
 		$contents[] = &$fr;
 
 		/* Add to central directory record. */
-		$cdrec = $this->_ctrlDirHeader;
+		$cdrec = $this->ctrlDirHeader;
 		/* Version made by. */
 		$cdrec .= "\x00\x00";
 		/* Version needed to extract */
@@ -690,23 +619,22 @@ class JArchiveZip implements JArchiveExtractable
 	 *
 	 * @return  boolean  True if successful
 	 *
-	 * @since   11.1
-	 *
+	 * @since   1.0
 	 * @todo	Review and finish implementation
 	 */
-	private function _createZIPFile(array &$contents, array &$ctrlDir, $path)
+	private function createZIPFile(array &$contents, array &$ctrlDir, $path)
 	{
 		$data = implode('', $contents);
 		$dir = implode('', $ctrlDir);
 
-		$buffer = $data . $dir . $this->_ctrlDirEnd . /* Total # of entries "on this disk". */
+		$buffer = $data . $dir . $this->ctrlDirEnd . /* Total # of entries "on this disk". */
 		pack('v', count($ctrlDir)) . /* Total # of entries overall. */
 		pack('v', count($ctrlDir)) . /* Size of central directory. */
 		pack('V', strlen($dir)) . /* Offset to start of central dir. */
 		pack('V', strlen($data)) . /* ZIP file comment length. */
 		"\x00\x00";
 
-		if (JFile::write($path, $buffer) === false)
+		if (File::write($path, $buffer) === false)
 		{
 			return false;
 		}

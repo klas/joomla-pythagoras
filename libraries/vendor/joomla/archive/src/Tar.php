@@ -1,20 +1,19 @@
 <?php
 /**
- * @package     Joomla.Platform
- * @subpackage  Archive
+ * Part of the Joomla Framework Archive Package
  *
- * @copyright   Copyright (C) 2005 - 2015 Open Source Matters, Inc. All rights reserved.
- * @license     GNU General Public License version 2 or later; see LICENSE
+ * @copyright  Copyright (C) 2005 - 2013 Open Source Matters, Inc. All rights reserved.
+ * @license    GNU General Public License version 2 or later; see LICENSE
  */
 
-defined('JPATH_PLATFORM') or die;
+namespace Joomla\Archive;
 
-jimport('joomla.filesystem.file');
-jimport('joomla.filesystem.folder');
-jimport('joomla.filesystem.path');
+use Joomla\Filesystem\Path;
+use Joomla\Filesystem\File;
+use Joomla\Filesystem\Folder;
 
 /**
- * Tar format adapter for the JArchive class
+ * Tar format adapter for the Archive package
  *
  * This class is inspired from and draws heavily in code and concept from the Compress package of
  * The Horde Project <http://www.horde.org>
@@ -22,18 +21,18 @@ jimport('joomla.filesystem.path');
  * @contributor  Michael Slusarz <slusarz@horde.org>
  * @contributor  Michael Cochrane <mike@graftonhall.co.nz>
  *
- * @since  11.1
+ * @since  1.0
  */
-class JArchiveTar implements JArchiveExtractable
+class Tar implements ExtractableInterface
 {
 	/**
 	 * Tar file types.
 	 *
 	 * @var    array
-	 * @since  11.1
+	 * @since  1.0
 	 */
-	private $_types = array(
-		0x0  => 'Unix file',
+	private $types = array(
+		0x0 => 'Unix file',
 		0x30 => 'File',
 		0x31 => 'Link',
 		0x32 => 'Symbolic link',
@@ -47,83 +46,81 @@ class JArchiveTar implements JArchiveExtractable
 	 * Tar file data buffer
 	 *
 	 * @var    string
-	 * @since  11.1
+	 * @since  1.0
 	 */
-	private $_data = null;
+	private $data = null;
 
 	/**
 	 * Tar file metadata array
 	 *
 	 * @var    array
-	 * @since  11.1
+	 * @since  1.0
 	 */
-	private $_metadata = null;
+	private $metadata = null;
+
+	/**
+	 * Holds the options array.
+	 *
+	 * @var    mixed  Array or object that implements \ArrayAccess
+	 * @since  1.0
+	 */
+	protected $options = array();
+
+	/**
+	 * Create a new Archive object.
+	 *
+	 * @param   mixed  $options  An array of options or an object that implements \ArrayAccess
+	 *
+	 * @since   1.0
+	 */
+	public function __construct($options = array())
+	{
+		$this->options = $options;
+	}
 
 	/**
 	 * Extract a ZIP compressed file to a given path
 	 *
 	 * @param   string  $archive      Path to ZIP archive to extract
 	 * @param   string  $destination  Path to extract archive into
-	 * @param   array   $options      Extraction options [unused]
 	 *
 	 * @return  boolean True if successful
 	 *
-	 * @throws  RuntimeException
-	 * @since   11.1
+	 * @since   1.0
+	 * @throws  \RuntimeException
 	 */
-	public function extract($archive, $destination, array $options = array())
+	public function extract($archive, $destination)
 	{
-		$this->_data = null;
-		$this->_metadata = null;
+		$this->data = null;
+		$this->metadata = null;
 
-		$this->_data = file_get_contents($archive);
+		$this->data = file_get_contents($archive);
 
-		if (!$this->_data)
+		if (!$this->data)
 		{
-			if (class_exists('JError'))
-			{
-				return JError::raiseWarning(100, 'Unable to read archive');
-			}
-			else
-			{
-				throw new RuntimeException('Unable to read archive');
-			}
+			throw new \RuntimeException('Unable to read archive');
 		}
 
-		$this->_getTarInfo($this->_data);
+		$this->getTarInfo($this->data);
 
-		for ($i = 0, $n = count($this->_metadata); $i < $n; $i++)
+		for ($i = 0, $n = count($this->metadata); $i < $n; $i++)
 		{
-			$type = strtolower($this->_metadata[$i]['type']);
+			$type = strtolower($this->metadata[$i]['type']);
 
 			if ($type == 'file' || $type == 'unix file')
 			{
-				$buffer = $this->_metadata[$i]['data'];
-				$path = JPath::clean($destination . '/' . $this->_metadata[$i]['name']);
+				$buffer = $this->metadata[$i]['data'];
+				$path = Path::clean($destination . '/' . $this->metadata[$i]['name']);
 
 				// Make sure the destination folder exists
-				if (!JFolder::create(dirname($path)))
+				if (!Folder::create(dirname($path)))
 				{
-					if (class_exists('JError'))
-					{
-						return JError::raiseWarning(100, 'Unable to create destination');
-					}
-					else
-					{
-						throw new RuntimeException('Unable to create destination');
-					}
+					throw new \RuntimeException('Unable to create destination');
 				}
 
-				if (JFile::write($path, $buffer) === false)
+				if (File::write($path, $buffer) === false)
 				{
-					if (class_exists('JError'))
-					{
-						return JError::raiseWarning(100, 'Unable to write entry');
-					}
-					else
-					{
-						throw new RuntimeException('Unable to write entry');
-					}
+					throw new \RuntimeException('Unable to write entry');
 				}
 			}
 		}
@@ -136,7 +133,7 @@ class JArchiveTar implements JArchiveExtractable
 	 *
 	 * @return  boolean  True if supported
 	 *
-	 * @since   11.3
+	 * @since   1.0
 	 */
 	public static function isSupported()
 	{
@@ -148,7 +145,7 @@ class JArchiveTar implements JArchiveExtractable
 	 *
 	 * @param   string  &$data  The Tar archive buffer.
 	 *
-	 * @return   array  Archive metadata array
+	 * @return  array  Archive metadata array
 	 * <pre>
 	 * KEY: Position in the array
 	 * VALUES: 'attr'  --  File attributes
@@ -159,9 +156,10 @@ class JArchiveTar implements JArchiveExtractable
 	 * 'type'  --  File type
 	 * </pre>
 	 *
-	 * @since    11.1
+	 * @since   1.0
+	 * @throws  \RuntimeException
 	 */
-	protected function _getTarInfo(& $data)
+	protected function getTarInfo(&$data)
 	{
 		$position = 0;
 		$return_array = array();
@@ -183,27 +181,9 @@ class JArchiveTar implements JArchiveExtractable
 				);
 			}
 
-			/**
-			 * This variable has been set in the previous loop,
-			 * meaning that the filename was present in the previous block
-			 * to allow more than 100 characters - see below
-			 */
-			if (isset($longlinkfilename))
-			{
-				$info['filename'] = $longlinkfilename;
-				unset($longlinkfilename);
-			}
-
 			if (!$info)
 			{
-				if (class_exists('JError'))
-				{
-					return JError::raiseWarning(100, 'Unable to decompress data');
-				}
-				else
-				{
-					throw new RuntimeException('Unable to decompress data');
-				}
+				throw new \RuntimeException('Unable to decompress data');
 			}
 
 			$position += 512;
@@ -218,11 +198,11 @@ class JArchiveTar implements JArchiveExtractable
 					'date' => octdec($info['mtime']),
 					'name' => trim($info['filename']),
 					'size' => octdec($info['size']),
-					'type' => isset($this->_types[$info['typeflag']]) ? $this->_types[$info['typeflag']] : null);
+					'type' => isset($this->types[$info['typeflag']]) ? $this->types[$info['typeflag']] : null);
 
 				if (($info['typeflag'] == 0) || ($info['typeflag'] == 0x30) || ($info['typeflag'] == 0x35))
 				{
-					// File or folder.
+					/* File or folder. */
 					$file['data'] = $contents;
 
 					$mode = hexdec(substr($info['mode'], 4, 3));
@@ -230,25 +210,16 @@ class JArchiveTar implements JArchiveExtractable
 						(($mode & 0x100) ? 'x' : '-') . (($mode & 0x040) ? 'r' : '-') . (($mode & 0x020) ? 'w' : '-') . (($mode & 0x010) ? 'x' : '-') .
 						(($mode & 0x004) ? 'r' : '-') . (($mode & 0x002) ? 'w' : '-') . (($mode & 0x001) ? 'x' : '-');
 				}
-				elseif (chr($info['typeflag']) == 'L' && $info['filename'] == '././@LongLink')
-				{
-					// GNU tar ././@LongLink support - the filename is actually in the contents,
-					// setting a variable here so we can test in the next loop
-					$longlinkfilename = $contents;
-
-					// And the file contents are in the next block so we'll need to skip this
-					continue;
-				}
 				else
 				{
-					// Some other type.
+					/* Some other type. */
 				}
 
 				$return_array[] = $file;
 			}
 		}
 
-		$this->_metadata = $return_array;
+		$this->metadata = $return_array;
 
 		return true;
 	}

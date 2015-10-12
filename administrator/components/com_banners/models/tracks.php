@@ -9,6 +9,8 @@
 
 defined('_JEXEC') or die;
 
+use Joomla\Archive\Archive as JArchive;
+
 /**
  * Methods supporting a list of tracks.
  *
@@ -518,7 +520,7 @@ class BannersModelTracks extends JModelList
 					}
 				}
 
-				if (!$packager = JArchive::getAdapter('zip'))
+				if (!$packager = (new JArchive)->getAdapter('zip'))
 				{
 					$this->setError(JText::_('COM_BANNERS_ERR_ZIP_ADAPTER_FAILURE'));
 
