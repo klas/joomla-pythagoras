@@ -26,19 +26,23 @@ class JFormFieldList extends JFormField
 	protected $type = 'List';
 
 	/**
-	 * Method to get the field input markup for a generic list.
-	 * Use the multiple attribute to enable multiselect.
+	 * Layout to render the input field in getInput(). This is only used for rendering edit forms.
 	 *
-	 * @return  string  The field input markup.
-	 *
-	 * @since   11.1
+	 * @var  string
 	 */
-	protected function getInput()
+	protected $renderInputLayout = 'joomla.form.field.list';
+
+	/**
+	 * Get the data that is going to be passed to the input field layout for the edit views
+	 *
+	 * @return  array
+	 */
+	protected function getInputLayoutData()
 	{
-		$html = array();
+		$displayData = parent::getInputLayoutData();
 
 		// Create a regular list.
-		$displayData = (array) $this;
+		$displayData = $this->getInputLayoutData();
 		$displayData['options'] = $this->getOptions();
 
 		// Create a read-only list (no name) with hidden input(s) to store the value(s).
@@ -57,8 +61,8 @@ class JFormFieldList extends JFormField
 				}
 			}
 		}
-		
-		return JLayoutHelper::render('joomla.form.field.list', $displayData);
+
+		return $displayData;
 	}
 
 	/**
