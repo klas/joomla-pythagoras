@@ -12,6 +12,12 @@ defined('JPATH_PLATFORM') or die;
 /**
  * Abstract Form Field class for the Joomla Platform.
  *
+ * JFormFields are strongly encouraged to use JLayout layout files to render themselves. For this reason you are
+ * strongly encouraged to change the various $...Layout properties to specify your layout files and extend the
+ * get...LayoutData methods to supply your layout templates with the necessary data to render themselves. This allows
+ * template developers and front-end developers to customise the look and feel of form fields to match the design
+ * language of their template without having to mess with the PHP code of form fields.
+ *
  * @since  11.1
  */
 abstract class JFormField
@@ -308,6 +314,20 @@ abstract class JFormField
 	 * @var  string
 	 */
 	protected $renderInputLayout = 'joomla.form.field.changeme';
+
+	/**
+	 * Layout to render the repeatable field in getRepeatable(). This is only used for rendering browse (grid) views.
+	 *
+	 * @var  string
+	 */
+	protected $renderRepeatableLayout = 'joomla.form.field.changeme.repeatable';
+
+	/**
+	 * Layout to render the static field in getStatic(). This is only used for rendering read views.
+	 *
+	 * @var  string
+	 */
+	protected $renderStaticLayout = 'joomla.form.field.changeme.static';
 
 	/**
 	 * Layout to render the edit form field. This is used by renderField() to render the label and input field in
@@ -692,6 +712,43 @@ abstract class JFormField
 	}
 
 	/**
+	 * Get the rendering of this field type for static display, e.g. in a single item view (typically a "read" task).
+	 *
+	 * @return  string  The field HTML
+	 */
+	protected function getStatic()
+	{
+		$layout = !empty($this->element['layout']) ? (string) $this->element['layout'] : $this->renderStaticLayout;
+
+		// Ensure field meets the requirements
+		if (empty($layout))
+		{
+			return '';
+		}
+
+		return $this->getLayoutRenderer($layout)->render((object) $this->getStaticLayoutData());
+	}
+
+	/**
+	 * Get the rendering of this field type for a repeatable (grid) display, e.g. in a view listing many item (typically
+	 * a "browse" task)
+	 *
+	 * @return  string  The field HTML
+	 */
+	protected function getRepeatable()
+	{
+		$layout = !empty($this->element['layout']) ? (string) $this->element['layout'] : $this->renderRepeatableLayout;
+
+		// Ensure field meets the requirements
+		if (empty($layout))
+		{
+			return '';
+		}
+
+		return $this->getLayoutRenderer($layout)->render((object) $this->getRepeatableLayoutData());
+	}
+
+	/**
 	 * Method to get the field title.
 	 *
 	 * @return  string  The field title.
@@ -747,27 +804,6 @@ abstract class JFormField
 		);
 
 		return JLayoutHelper::render($this->renderLabelLayout, $displayData);
-	}
-
-	/**
-	 * Get the rendering of this field type for static display, e.g. in a single item view (typically a "read" task).
-	 *
-	 * @return  string  The field HTML
-	 */
-	protected function getStatic()
-	{
-		return '';
-	}
-
-	/**
-	 * Get the rendering of this field type for a repeatable (grid) display, e.g. in a view listing many item (typically
-	 * a "browse" task)
-	 *
-	 * @return  string  The field HTML
-	 */
-	protected function getRepeatable()
-	{
-		return '';
 	}
 
 	/**
@@ -973,7 +1009,10 @@ abstract class JFormField
 	}
 
 	/**
-	 * Get the data that is going to be passed to the input field layout for the edit views
+	 * Get the data that is going to be passed to the input field layout for the edit views. Field implementations are
+	 * highly encouraged to extend this method and set the various $...Layout properties to define the JLayout layouts
+	 * which are used to render the field instead of implementing the getInput, getLabel, getRepeatable, getStatic and
+	 * renderField methods directly.
 	 *
 	 * @return  array
 	 */
@@ -1023,5 +1062,27 @@ abstract class JFormField
 			'validate'     => $this->validate,
 			'value'        => $this->value
 		);
+	}
+
+	/**
+	 * Get the data that is going to be passed to the repeatable field layout for the browse (grid) views. By default it
+	 * returns the data from getInputLayoutData.
+	 *
+	 * @return  array
+	 */
+	protected function getRepeatableLayoutData()
+	{
+		return $this->getInputLayoutData();
+	}
+
+	/**
+	 * Get the data that is going to be passed to the static field layout for the read views. By default it returns the
+	 * data from getInputLayoutData.
+	 *
+	 * @return  array
+	 */
+	protected function getStaticLayoutData()
+	{
+		return $this->getInputLayoutData();
 	}
 }
