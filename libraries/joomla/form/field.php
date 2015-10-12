@@ -1026,7 +1026,7 @@ abstract class JFormField
 		$description = !empty($this->description) ? $this->description : null;
 		$description = !empty($description) && $this->translateDescription ? JText::_($description) : $description;
 
-		$hiddenLabel = empty($options['hiddenLabel']) && $this->getAttribute('hiddenLabel');
+		$hiddenLabel = $this->getAttribute('hiddenLabel');
 
 		$alt         = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $this->fieldname);
 		$hint        = $this->translateHint ? JText::alt($this->hint, $alt) : $this->hint;
